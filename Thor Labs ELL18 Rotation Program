@@ -1,0 +1,83 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar 14 14:18:36 2022
+
+@author: mozart_of_physics
+"""
+
+import pyvisa
+
+
+def tourner(ang):
+    """here we get the user's input and then
+    we convert it to an value in pulses
+    in our case we know that to rotate 360 it's necessary
+    143360 pulses"""
+    n_pulses = int(143360/360*ang)
+    
+    """here we get the value of pulses in decimal and we convert
+    in a way that the software can understand it,
+    first we convert to hexadecimal. After that 
+    we remove the 0x that preeceds the number and then we fill it with a number
+    of zeros in order to have 8 bits"""
+    ang_hex = hex(n_pulses).replace('0x','').upper().zfill(8)
+    
+    """here we send our command to the software with the code that indicates
+    an absolute rotation"""
+    conection().query('0ma' + ang_hex)
+
+
+def position():
+    """" in this part we send a message asking for the instrument's 
+    absolute postition'"""
+    pulses_hex = conection().query('0gp')
+    
+    """it responds with a hexadecimal value which we discard the first three
+    digits and the last four digits"""
+    pos_dec = int(pulses_hex[3:-2], 16)
+    
+    """here we print the position to the user"""
+    print(360*pos_dec/143360)
+    
+    response = input("Wants to registrate the angles? Respond with y to Yes and n to No")
+    
+    if (response == 'y'):
+       """here we gonna register the angle in a list""" 
+       Angle_found.append(pos_dec)
+            
+    return Angle_found
+
+
+def conection():
+    rm = pyvisa.ResourceManager()
+    """command that shows which instruments are connected to the computer"""
+    print(rm.list_resources())
+    
+    intrument_adress = input('Chose the intrument for conection\n')
+    """here we estabilish the connection with the previous address given by 
+    Pyvisa"""
+    my_instrument = rm.open_resource(intrument_adress)
+    
+    return my_instrument
+
+"""here we declare the variable that is going to keep all the values of
+angles found by the user"""
+Angle_found = []
+
+try:
+    """Try to connect, if succeed, code keep
+    running"""
+    conection()
+    
+    while True:
+        """at this point we gonna rotate our instrument
+        we ask for the user to type the angle desired
+        in this case the angle is always absolute, so we have
+        the same reference as 0 angles"""
+        tourner(float(input('Write the angle desired')))
+        
+        """now we gonna register the actual postition"""
+        position()
+        
+except:
+    print('It was not possible to connect to the instrument\n')
